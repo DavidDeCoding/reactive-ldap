@@ -16,7 +16,7 @@ object Dependencies {
   val pureConfig = "com.github.pureconfig" %% "pureconfig" % Versions.pureConfig
 
   //test
-  val scalaTest = "org.scalatest" %% "scalatest" % Versions.scalaTest % "Test"
+  val scalaTest = "org.scalatest" %% "scalatest" % Versions.scalaTest % "test"
 
   val compile = Seq(
     unboundidSdk
