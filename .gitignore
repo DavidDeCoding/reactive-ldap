@@ -1,0 +1,10 @@
+*.log
+*.jar
+.idea/
+target/
+project/project
+tmp
+.DS_Store
+.idea_modules
+.cache
+logs
