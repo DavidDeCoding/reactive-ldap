@@ -17,3 +17,9 @@ lazy val root = project
   .settings(commonSettings: _*)
   .settings(scalacOptions ++= compileOptions)
   .settings(libraryDependencies ++= Dependencies.all)
+  /*
+  * Fail the build with the following(example):
+  * coverageMinimum := 80
+  * coverageFailOnMinimum := true
+  * */
+  .settings(coverageEnabled := true)
