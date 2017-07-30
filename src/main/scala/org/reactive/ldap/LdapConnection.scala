@@ -11,6 +11,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object LdapConnection {
 
+  def DefaultLdapConnectionConfig = new LdapConnectionConfig()
+
+  def DefaultLdapPoolConfig = new GenericObjectPool.Config()
+
   def apply(ldapConnectionPool: LdapConnectionPool): LdapConnection = {
 
     val totalPooledConnections = ldapConnectionPool.getMaxActive
@@ -29,8 +33,8 @@ object LdapConnection {
     def withLdapPoolConfig(lpc: GenericObjectPool.Config): Builder = copy(ldapConfig, Option(lpc))
 
     def build(): LdapConnection = {
-      val config = ldapConfig.getOrElse(Defaults.LdapConfigs)
-      val poolConfig = ldapPoolConfig.getOrElse(Defaults.LdapPoolConfigs)
+      val config = ldapConfig.getOrElse(DefaultLdapConnectionConfig)
+      val poolConfig = ldapPoolConfig.getOrElse(DefaultLdapPoolConfig)
 
       val defaultLdapConnectionFactory = new DefaultLdapConnectionFactory(config)
 
@@ -73,4 +77,8 @@ case class LdapConnection(
     Future {
       ldapConnectionPool.getConnection.search(searchRequest)
     }(ioExecutionContext)
+
+  def close(): Unit = {
+    ldapConnectionPool.close()
+  }
 }
