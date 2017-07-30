@@ -3,9 +3,11 @@ package org.reactive.ldap
 import java.util.concurrent.Executors
 
 import org.apache.commons.pool.impl.GenericObjectPool
+import org.apache.directory.api.ldap.codec.api.LdapApiService
+import org.apache.directory.api.ldap.codec.osgi.DefaultLdapCodecService
 import org.apache.directory.api.ldap.model.cursor.SearchCursor
 import org.apache.directory.api.ldap.model.message._
-import org.apache.directory.ldap.client.api.{DefaultLdapConnectionFactory, DefaultPoolableLdapConnectionFactory, LdapConnectionConfig, LdapConnectionPool}
+import org.apache.directory.ldap.client.api.{DefaultPoolableLdapConnectionFactory, LdapConnectionConfig, LdapConnectionPool}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -14,6 +16,10 @@ object LdapConnection {
   def DefaultLdapConnectionConfig = new LdapConnectionConfig()
 
   def DefaultLdapPoolConfig = new GenericObjectPool.Config()
+
+  def DefaultLdapApiService = new DefaultLdapCodecService()
+
+  def DefaultTimeout = LdapConnectionConfig.DEFAULT_TIMEOUT
 
   def apply(ldapConnectionPool: LdapConnectionPool): LdapConnection = {
 
@@ -25,23 +31,33 @@ object LdapConnection {
 
   case class Builder(
     ldapConfig: Option[LdapConnectionConfig],
+    ldapApiService: Option[LdapApiService],
+    ldapTimeout: Option[Long],
     ldapPoolConfig: Option[GenericObjectPool.Config]
   ) {
 
-    def withLdapConfig(lc: LdapConnectionConfig): Builder = copy(Option(lc), ldapPoolConfig)
+    def withLdapConfig(lc: LdapConnectionConfig): Builder = copy(Option(lc), ldapApiService, ldapTimeout, ldapPoolConfig)
 
-    def withLdapPoolConfig(lpc: GenericObjectPool.Config): Builder = copy(ldapConfig, Option(lpc))
+    def withLdapPoolConfig(lpc: GenericObjectPool.Config): Builder = copy(ldapConfig, ldapApiService, ldapTimeout, Option(lpc))
+
+    def withLdapApiService(las: LdapApiService): Builder = copy(ldapConfig, Option(las), ldapTimeout, ldapPoolConfig)
+
+    def withTimeout(timeout: Long): Builder = copy(ldapConfig, ldapApiService, Option(timeout), ldapPoolConfig)
 
     def build(): LdapConnection = {
       val config = ldapConfig.getOrElse(DefaultLdapConnectionConfig)
+      val apiService = ldapApiService.getOrElse(DefaultLdapApiService)
+      val timeout = ldapTimeout.getOrElse(DefaultTimeout)
       val poolConfig = ldapPoolConfig.getOrElse(DefaultLdapPoolConfig)
 
-      val defaultLdapConnectionFactory = new DefaultLdapConnectionFactory(config)
-
       val ldapConnectionPool = new LdapConnectionPool(
-        new DefaultPoolableLdapConnectionFactory(defaultLdapConnectionFactory),
+        config,
+        apiService,
+        timeout,
         poolConfig
       )
+
+      DefaultPoolableLdapConnectionFactory
 
       LdapConnection(ldapConnectionPool)
     }
