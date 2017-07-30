@@ -22,6 +22,7 @@ object EmbeddedLdapServer {
     * @param id Id of the partition
     * @param suffixDn Suffix Dn of the partition
     * @param indexes Indexes of the partition
+    * @param attributes Attributes for the entry for partition
     */
   case class Partition(
     id: String,
@@ -152,24 +153,24 @@ trait EmbeddedLdapServer extends BeforeAndAfterAll { this: Suite =>
     }
 
     /**
-      * Initialize ldapServer with directory service
+      * Initialize ldap server with directory service
       */
     ldapServer.setDirectoryService(directoryService)
 
     /**
-      * Initialize ldapServer with port
+      * Initialize ldap server with port
       */
     ldapServer.setTransports(new TcpTransport(port))
 
     /**
-      * Start ldapServer
+      * Start ldap server
       */
     ldapServer.start()
   }
 
   override def afterAll(): Unit = {
     /**
-      * Stop ldapserver
+      * Stop ldap server
       */
     ldapServer.stop()
 
