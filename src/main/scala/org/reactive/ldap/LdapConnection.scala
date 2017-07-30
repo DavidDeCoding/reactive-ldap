@@ -57,8 +57,6 @@ object LdapConnection {
         poolConfig
       )
 
-      DefaultPoolableLdapConnectionFactory
-
       LdapConnection(ldapConnectionPool)
     }
   }
