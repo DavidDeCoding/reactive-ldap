@@ -13,7 +13,7 @@ object Dependencies {
   }
 
   // compile
-  val unboundidSdk = "org.apache.directory.api" % "api-all" % Versions.apacheLdapApiVersion
+  val apacheLdapApi = "org.apache.directory.api" % "api-all" % Versions.apacheLdapApiVersion
   val pureConfig = "com.github.pureconfig" %% "pureconfig" % Versions.pureConfigVersion
 
   //test
@@ -21,7 +21,7 @@ object Dependencies {
   val apacheDirectoryService = "org.apache.directory.server" % "apacheds-all" % Versions.apacheDirectoryServiceVersion % "test"
 
   val compile = Seq(
-    unboundidSdk
+    apacheLdapApi
   )
 
   val test = Seq(
