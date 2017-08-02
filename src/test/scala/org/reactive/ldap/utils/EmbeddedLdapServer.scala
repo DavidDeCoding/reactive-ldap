@@ -72,7 +72,7 @@ object EmbeddedLdapServer {
   /**
     * Generate random directory
     */
-  def randomDirectory: String = s"apache-ds-${randomNumber(0, 100)}"
+  def randomDirectory: String = s"apache-ds-${randomNumber(0, 1000)}"
 }
 
 /**
@@ -83,7 +83,7 @@ trait EmbeddedLdapServer extends BeforeAndAfterAll { this: Suite =>
   /**
     * The temporary working directory
     */
-  lazy val workingDirectory: File = new File("java.io.tmpdir", randomDirectory)
+  lazy val workingDirectory: File = new File(System.getProperty("java.io.tmpdir"), randomDirectory)
 
   /**
     * The Directory Service
@@ -101,12 +101,17 @@ trait EmbeddedLdapServer extends BeforeAndAfterAll { this: Suite =>
   lazy val port: Int = randomPort
 
   /**
+    * The test DN
+    */
+  lazy val testDn = "dc=test,dc=org"
+
+  /**
     * List of partitions
     */
   lazy val partitions: List[Partition] = List(
     Partition(
       id = "test",
-      suffixDn = "dc=test,dc=org",
+      suffixDn = testDn,
       indexes = Set("objectClass", "ou", "uid"),
       attributes = Map(
         "objectClass" -> Set("top", "domain", "extensibleObject"),
@@ -118,7 +123,6 @@ trait EmbeddedLdapServer extends BeforeAndAfterAll { this: Suite =>
       * Clean working directory
       */
     FileUtils.deleteDirectory(workingDirectory)
-
 
     /**
       * Initialize the working directory
@@ -137,9 +141,24 @@ trait EmbeddedLdapServer extends BeforeAndAfterAll { this: Suite =>
     }
 
     /**
+      * Initialize ldap server with directory service
+      */
+    ldapServer.setDirectoryService(directoryService)
+
+    /**
+      * Initialize ldap server with port
+      */
+    ldapServer.setTransports(new TcpTransport(port))
+
+    /**
       * Start the directory service
       */
     directoryService.startup()
+
+    /**
+      * Start ldap server
+      */
+    ldapServer.start()
 
     /**
       * Add entries
@@ -151,21 +170,6 @@ trait EmbeddedLdapServer extends BeforeAndAfterAll { this: Suite =>
       }
       directoryService.getAdminSession.add(entry)
     }
-
-    /**
-      * Initialize ldap server with directory service
-      */
-    ldapServer.setDirectoryService(directoryService)
-
-    /**
-      * Initialize ldap server with port
-      */
-    ldapServer.setTransports(new TcpTransport(port))
-
-    /**
-      * Start ldap server
-      */
-    ldapServer.start()
   }
 
   override def afterAll(): Unit = {
@@ -178,5 +182,10 @@ trait EmbeddedLdapServer extends BeforeAndAfterAll { this: Suite =>
       * Stop the directory service
       */
     directoryService.shutdown()
+
+    /**
+      * Clean up working directory
+      */
+    FileUtils.deleteDirectory(workingDirectory)
   }
 }

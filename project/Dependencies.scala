@@ -4,7 +4,7 @@ object Dependencies {
 
   object Versions {
     // compile
-    val unboundidSdkVersion = "4.0.0"
+    val apacheLdapApiVersion = "1.0.0-RC2"
     val pureConfigVersion = "0.7.2"
 
     // test
@@ -13,7 +13,7 @@ object Dependencies {
   }
 
   // compile
-  val unboundidSdk = "com.unboundid" % "unboundid-ldapsdk" % Versions.unboundidSdkVersion
+  val unboundidSdk = "org.apache.directory.api" % "api-all" % Versions.apacheLdapApiVersion
   val pureConfig = "com.github.pureconfig" %% "pureconfig" % Versions.pureConfigVersion
 
   //test
