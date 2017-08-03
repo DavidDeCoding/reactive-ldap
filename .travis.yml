@@ -15,7 +15,7 @@ script:
 # [info] Written Cobertura report [.../reactive-ldap/target/scala-2.12/coverage-report/cobertura.xml]
 # [info] Written XML coverage report [.../reactive-ldap/target/scala-2.12/scoverage-report/scoverage.xml]
 # [info] Written HTML coverage report [.../reactive-ldap/target/scala-2.12/scoverage-report/index.html]  
-- sbt ++$TRAVIS_SCALA_VERSION clean test coverageReport
+- sbt ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport
 after_success:
 - sbt ++$TRAVIS_SCALA_VERSION coveralls
 before_cache:
