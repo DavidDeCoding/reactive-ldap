@@ -3,23 +3,18 @@ package org.reactive.ldap
 import java.util.concurrent.Executors
 
 import org.apache.commons.pool.impl.GenericObjectPool
-import org.apache.directory.api.ldap.codec.api.LdapApiService
-import org.apache.directory.api.ldap.codec.osgi.DefaultLdapCodecService
 import org.apache.directory.api.ldap.model.cursor.SearchCursor
 import org.apache.directory.api.ldap.model.message._
-import org.apache.directory.ldap.client.api.{DefaultPoolableLdapConnectionFactory, LdapConnectionConfig, LdapConnectionPool}
+import org.apache.directory.ldap.client.api.{DefaultLdapConnectionFactory, DefaultPoolableLdapConnectionFactory, LdapConnectionConfig, LdapConnectionPool}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 object LdapConnection {
 
   def DefaultLdapConnectionConfig = new LdapConnectionConfig()
 
   def DefaultLdapPoolConfig = new GenericObjectPool.Config()
-
-  def DefaultLdapApiService = new DefaultLdapCodecService()
-
-  def DefaultTimeout = LdapConnectionConfig.DEFAULT_TIMEOUT
 
   def apply(ldapConnectionPool: LdapConnectionPool): LdapConnection = {
 
@@ -30,30 +25,21 @@ object LdapConnection {
   }
 
   case class Builder(
-    ldapConfig: Option[LdapConnectionConfig],
-    ldapApiService: Option[LdapApiService],
-    ldapTimeout: Option[Long],
-    ldapPoolConfig: Option[GenericObjectPool.Config]
+    ldapConfig: Option[LdapConnectionConfig] = None,
+    ldapPoolConfig: Option[GenericObjectPool.Config] = None
   ) {
 
-    def withLdapConfig(lc: LdapConnectionConfig): Builder = copy(Option(lc), ldapApiService, ldapTimeout, ldapPoolConfig)
+    def withLdapConfig(lc: LdapConnectionConfig): Builder = copy(Option(lc), ldapPoolConfig)
 
-    def withLdapPoolConfig(lpc: GenericObjectPool.Config): Builder = copy(ldapConfig, ldapApiService, ldapTimeout, Option(lpc))
-
-    def withLdapApiService(las: LdapApiService): Builder = copy(ldapConfig, Option(las), ldapTimeout, ldapPoolConfig)
-
-    def withTimeout(timeout: Long): Builder = copy(ldapConfig, ldapApiService, Option(timeout), ldapPoolConfig)
+    def withLdapPoolConfig(lpc: GenericObjectPool.Config): Builder = copy(ldapConfig, Option(lpc))
 
     def build(): LdapConnection = {
       val config = ldapConfig.getOrElse(DefaultLdapConnectionConfig)
-      val apiService = ldapApiService.getOrElse(DefaultLdapApiService)
-      val timeout = ldapTimeout.getOrElse(DefaultTimeout)
       val poolConfig = ldapPoolConfig.getOrElse(DefaultLdapPoolConfig)
+      val factory = new DefaultLdapConnectionFactory(config)
 
       val ldapConnectionPool = new LdapConnectionPool(
-        config,
-        apiService,
-        timeout,
+        new DefaultPoolableLdapConnectionFactory(factory),
         poolConfig
       )
 
@@ -67,29 +53,29 @@ case class LdapConnection(
   ioExecutionContext: ExecutionContext
 ) {
 
-  def add(addRequest: AddRequest): Future[AddResponse] =
+  def add(addRequest: AddRequest): Future[Try[AddResponse]] =
     Future{
-      ldapConnectionPool.getConnection.add(addRequest)
+      Try(ldapConnectionPool.getConnection).map(_.add(addRequest))
     }(ioExecutionContext)
 
-  def compare(compareRequest: CompareRequest): Future[CompareResponse] =
+  def compare(compareRequest: CompareRequest): Future[Try[CompareResponse]] =
     Future {
-      ldapConnectionPool.getConnection.compare(compareRequest)
+      Try(ldapConnectionPool.getConnection).map(_.compare(compareRequest))
     }(ioExecutionContext)
 
-  def delete(deleteRequest: DeleteRequest): Future[DeleteResponse] =
+  def delete(deleteRequest: DeleteRequest): Future[Try[DeleteResponse]] =
     Future {
-      ldapConnectionPool.getConnection.delete(deleteRequest)
+      Try(ldapConnectionPool.getConnection).map(_.delete(deleteRequest))
     }(ioExecutionContext)
 
-  def modify(modifyRequest: ModifyRequest): Future[ModifyResponse] =
+  def modify(modifyRequest: ModifyRequest): Future[Try[ModifyResponse]] =
     Future {
-      ldapConnectionPool.getConnection.modify(modifyRequest)
+      Try(ldapConnectionPool.getConnection).map(_.modify(modifyRequest))
     }(ioExecutionContext)
 
-  def search(searchRequest: SearchRequest): Future[SearchCursor] =
+  def search(searchRequest: SearchRequest): Future[Try[SearchCursor]] =
     Future {
-      ldapConnectionPool.getConnection.search(searchRequest)
+      Try(ldapConnectionPool.getConnection).map(_.search(searchRequest))
     }(ioExecutionContext)
 
   def close(): Unit = {
