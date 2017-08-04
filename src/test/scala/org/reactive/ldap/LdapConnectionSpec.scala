@@ -1,13 +1,16 @@
 package org.reactive.ldap
 
 import org.apache.commons.pool.impl.GenericObjectPool
-import org.apache.directory.api.ldap.model.entry.DefaultEntry
-import org.apache.directory.api.ldap.model.message.{AddRequestImpl, ResultCodeEnum}
+import org.apache.directory.api.ldap.model.entry.{DefaultEntry, DefaultModification, ModificationOperation}
+import org.apache.directory.api.ldap.model.message._
+import org.apache.directory.api.ldap.model.name.Dn
 import org.apache.directory.ldap.client.api.LdapConnectionConfig
 import org.reactive.ldap.utils.EmbeddedLdapServer
 import org.scalatest.{FreeSpecLike, Matchers}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
+
+import scala.collection.JavaConverters._
 
 class LdapConnectionSpec
   extends FreeSpecLike
@@ -44,6 +47,16 @@ class LdapConnectionSpec
     ldapPoolConfig.timeBetweenEvictionRunsMillis = -1L
     ldapPoolConfig.whenExhaustedAction = GenericObjectPool.WHEN_EXHAUSTED_BLOCK
 
+    val entry = new DefaultEntry(
+      s"cn=testadd_cn, $testDn",
+      "ObjectClass: top",
+      "ObjectClass: person",
+      "ObjectClass: inetOrgPerson",
+      "ObjectClass: organizationalPerson",
+      "cn: testadd_cn",
+      "sn: testadd_sn"
+    )
+
     "be able to add ldap config" in {
       builder = builder.withLdapConfig(ldapConfig)
 
@@ -63,18 +76,61 @@ class LdapConnectionSpec
     }
 
     "be able to add entry" in {
-      val entry = new DefaultEntry(
-        s"cn=testadd_cn, $testDn",
-        "ObjectClass: top",
-        "ObjectClass: person",
-        "cn: testadd_cn",
-        "sn: testadd_sn"
-      )
-
       val addRequest = new AddRequestImpl()
       addRequest.setEntry(entry)
 
       whenReady(ldapConnection.add(addRequest)) { result =>
+        result.get.getLdapResult.getResultCode should equal(ResultCodeEnum.SUCCESS)
+      }
+    }
+
+    "be able to modify entry" in {
+      val modifyRequest = new ModifyRequestImpl()
+      modifyRequest.setName(new Dn(s"cn=testadd_cn, $testDn"))
+      modifyRequest.addModification(new DefaultModification(ModificationOperation.ADD_ATTRIBUTE, "givenName", "John", "Peter"))
+
+      whenReady(ldapConnection.modify(modifyRequest)) { result =>
+        result.get.getLdapResult.getResultCode should equal(ResultCodeEnum.SUCCESS)
+      }
+    }
+
+    "be able to search entry" in {
+      val expectedEntry = entry.add("givenName", "John", "Peter")
+
+      val searchRequest = new SearchRequestImpl()
+      searchRequest.setBase(new Dn(testDn))
+      searchRequest.setScope(SearchScope.SUBTREE)
+      searchRequest.setFilter("(cn=testadd_cn)")
+
+      whenReady(ldapConnection.search(searchRequest)) { result =>
+        Option(result.get.asScala.head).map(_.asInstanceOf[SearchResultEntry].getEntry) match {
+          case Some(entry) =>
+            entry.get("givenName") should equal(expectedEntry.get("givenName"))
+            entry.get("cn") should equal(expectedEntry.get("cn"))
+            entry.get("sn") should equal(expectedEntry.get("sn"))
+            entry.getDn should equal(expectedEntry.getDn)
+
+          case None => fail("Missing entry!")
+        }
+      }
+    }
+
+    "be able to compare entry" in {
+      val compareRequest = new CompareRequestImpl()
+      compareRequest.setName(new Dn(s"cn=testadd_cn, $testDn"))
+      compareRequest.setAttributeId(entry.get("sn").getId)
+      compareRequest.setAssertionValue("testadd_sn")
+
+      whenReady(ldapConnection.compare(compareRequest)) { result =>
+        result.get.isTrue should equal(true)
+      }
+    }
+
+    "be able to delete request" in {
+      val deleteRequest = new DeleteRequestImpl()
+      deleteRequest.setName(new Dn(s"cn=testadd_cn, $testDn"))
+
+      whenReady(ldapConnection.delete(deleteRequest)) { result =>
         result.get.getLdapResult.getResultCode should equal(ResultCodeEnum.SUCCESS)
       }
     }
