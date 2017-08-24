@@ -80,7 +80,7 @@ class LdapConnectionSpec
       addRequest.setEntry(entry)
 
       whenReady(ldapConnection.add(addRequest)) { result =>
-        result.get.getLdapResult.getResultCode should equal(ResultCodeEnum.SUCCESS)
+        result.getLdapResult.getResultCode should equal(ResultCodeEnum.SUCCESS)
       }
     }
 
@@ -90,7 +90,7 @@ class LdapConnectionSpec
       modifyRequest.addModification(new DefaultModification(ModificationOperation.ADD_ATTRIBUTE, "givenName", "John", "Peter"))
 
       whenReady(ldapConnection.modify(modifyRequest)) { result =>
-        result.get.getLdapResult.getResultCode should equal(ResultCodeEnum.SUCCESS)
+        result.getLdapResult.getResultCode should equal(ResultCodeEnum.SUCCESS)
       }
     }
 
@@ -103,7 +103,7 @@ class LdapConnectionSpec
       searchRequest.setFilter("(cn=testadd_cn)")
 
       whenReady(ldapConnection.search(searchRequest)) { result =>
-        Option(result.get.asScala.head).map(_.asInstanceOf[SearchResultEntry].getEntry) match {
+        Option(result.asScala.head).map(_.asInstanceOf[SearchResultEntry].getEntry) match {
           case Some(entry) =>
             entry.get("givenName") should equal(expectedEntry.get("givenName"))
             entry.get("cn") should equal(expectedEntry.get("cn"))
@@ -122,7 +122,7 @@ class LdapConnectionSpec
       compareRequest.setAssertionValue("testadd_sn")
 
       whenReady(ldapConnection.compare(compareRequest)) { result =>
-        result.get.isTrue should equal(true)
+        result.isTrue should equal(true)
       }
     }
 
@@ -131,7 +131,7 @@ class LdapConnectionSpec
       deleteRequest.setName(new Dn(s"cn=testadd_cn, $testDn"))
 
       whenReady(ldapConnection.delete(deleteRequest)) { result =>
-        result.get.getLdapResult.getResultCode should equal(ResultCodeEnum.SUCCESS)
+        result.getLdapResult.getResultCode should equal(ResultCodeEnum.SUCCESS)
       }
     }
   }
